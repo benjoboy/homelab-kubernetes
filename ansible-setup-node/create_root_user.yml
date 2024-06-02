@@ -1,0 +1,20 @@
+---
+- name: Create user with root privileges
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Create user
+      user:
+        name: user
+        shell: /bin/bash
+        createhome: yes
+        state: present
+
+    - name: Grant sudo privileges to the user
+      lineinfile:
+        dest: /etc/sudoers
+        line: "user ALL=(ALL) NOPASSWD:ALL"
+        validate: 'visudo -cf %s'
+        insertafter: EOF
+      become: true
