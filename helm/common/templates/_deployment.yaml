@@ -1,0 +1,81 @@
+{{- define "common.deployment" -}}
+{{- $common := dict "Values" .Values.common -}} 
+{{- $noCommon := omit .Values "common" -}} 
+{{- $overrides := dict "Values" $noCommon -}} 
+{{- $noValues := omit . "Values" -}} 
+{{- with merge $noValues $overrides $common -}}
+apiVersion: apps/v1
+kind: Deployment
+{{ template "common.metadata" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "common.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  strategy:
+   type: RollingUpdate
+   rollingUpdate:
+     maxSurge: 1
+     maxUnavailable: 25%
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        timestamp: "{{ date "20060102150405" .Release.Time }}"
+      labels:
+        app.kubernetes.io/name: {{ include "common.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      {{ if .Values.image.pullSecret }}
+      imagePullSecrets:
+        - name: {{ .Values.image.pullSecret }}
+      {{ end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          {{- if include "common.prefix" . }}
+          image: "{{ .Values.image.repository }}/{{ template "common.prefix" . }}/{{ template "common.name" . }}:{{ .Values.image.tag }}"
+          {{- else }}
+          image: "{{ .Values.image.repository }}/{{ template "common.name" . }}:{{ .Values.image.tag }}"
+          {{- end }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{ if or .Values.configmap .Values.secret }}
+          envFrom:
+          {{ if .Values.configmap }}
+          - configMapRef:
+              name: {{ include "common.fullname" . }}
+          {{ end }}
+          {{ if .Values.secret }}
+          - secretRef:
+              name: {{ include "common.fullname" . }}
+          {{ end }}
+          {{ end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.containerport }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.healthcheckpath }}
+              port: http
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.healthcheckpath }}
+              port: http
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+    {{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+
+{{- end -}}
+{{- end -}}
