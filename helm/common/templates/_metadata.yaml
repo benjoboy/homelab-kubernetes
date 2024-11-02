@@ -1,0 +1,15 @@
+{{- define "common.metadata" -}}
+metadata:
+  {{ if include "common.namespace" . }}
+  namespace: {{ include "common.namespace" . }}
+  {{- end }}
+  name: {{ include "common.fullname" . }}
+  labels:
+    {{ if include "common.namespace" . }}
+    app: {{ include "common.namespace" . }}
+    {{- end }}
+    app.kubernetes.io/name: {{ include "common.name" . }}
+    helm.sh/chart: {{ include "common.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- end -}}
