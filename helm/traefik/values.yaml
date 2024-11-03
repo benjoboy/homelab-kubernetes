@@ -697,6 +697,14 @@ ports:
         #   - namespace-name1@kubernetescrd
         #   - namespace-name2@kubernetescrd
         middlewares: []
+    dns:
+        port: 53
+        # hostPort: 53
+        # containerPort: 53
+        expose:
+            default: true
+        exposedPort: 53
+        protocol: UDP
     metrics:
         # -- When using hostNetwork, use another port to avoid conflict with node exporter:
         # https://github.com/prometheus/prometheus/wiki/Default-port-allocations

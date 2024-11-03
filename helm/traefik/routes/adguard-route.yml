@@ -1,0 +1,12 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRouteUDP
+metadata:
+    name: adguard-dns
+    namespace: homelab
+spec:
+    entryPoints:
+        - dns
+    routes:
+        - services:
+              - name: adguard-service
+                port: 53
